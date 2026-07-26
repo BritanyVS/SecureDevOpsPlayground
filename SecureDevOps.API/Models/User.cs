@@ -24,6 +24,15 @@ public class User
     [MaxLength(50)]
     public string? LastName { get; set; }
 
+    [Required]
+    [MaxLength(20)]
+    public string Role { get; set; } = "User";
+
+    [MaxLength(255)]
+    public string? RefreshToken { get; set; }
+
+    public DateTime? RefreshTokenExpiry { get; set; }
+
     public bool IsActive { get; set; } = true;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
