@@ -24,7 +24,7 @@ pipeline {
         stage('Snyk Security Scan') {
             steps {
                 echo 'Ejecutando análisis de vulnerabilidades con Snyk...'
-                bat '"C:\\Users\\Bri\\AppData\\Roaming\\npm\\snyk.cmd" test --file=SecureDevOps.API/SecureDevOps.API.csproj'
+                bat 'cd SecureDevOps.API && "C:\\Users\\Bri\\AppData\\Roaming\\npm\\snyk.cmd" test'
             }
         }
     }
