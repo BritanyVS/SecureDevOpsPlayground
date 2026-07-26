@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SecureDevOps.API.DTOs.TaskItem;
 using SecureDevOps.API.Services;
@@ -6,6 +7,7 @@ namespace SecureDevOps.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class TaskItemController : ControllerBase
 {
     private readonly ITaskItemService _service;
