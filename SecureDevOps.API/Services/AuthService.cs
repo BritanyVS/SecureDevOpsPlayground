@@ -9,11 +9,16 @@ public class AuthService : IAuthService
 {
     private readonly AppDbContext _context;
     private readonly IPasswordHasherService _passwordHasher;
+    private readonly IJwtService _jwtService;
 
-    public AuthService(AppDbContext context, IPasswordHasherService passwordHasher)
+    public AuthService(
+        AppDbContext context,
+        IPasswordHasherService passwordHasher,
+        IJwtService jwtService)
     {
         _context = context;
         _passwordHasher = passwordHasher;
+        _jwtService = jwtService;
     }
 
     public async Task<RegisterResult> RegisterAsync(RegisterRequestDto dto)
@@ -50,6 +55,27 @@ public class AuthService : IAuthService
         {
             IsSuccess = true,
             User = MapToResponseDto(user)
+        };
+    }
+
+    public async Task<LoginResponseDto?> LoginAsync(LoginRequestDto dto)
+    {
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.Email == dto.Email);
+
+        if (user is null)
+            return null;
+
+        if (!_passwordHasher.VerifyPassword(dto.Password, user.PasswordHash))
+            return null;
+
+        var token = _jwtService.GenerateToken(user);
+        var expiresAt = DateTime.UtcNow.AddMinutes(30);
+
+        return new LoginResponseDto
+        {
+            Token = token,
+            ExpiresAt = expiresAt
         };
     }
 
