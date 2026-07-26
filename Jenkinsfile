@@ -22,12 +22,11 @@ pipeline {
         }
 
         stage('Snyk Security Scan') {
-            steps {
-                echo 'Ejecutando análisis de vulnerabilidades con Snyk...'
-                bat 'snyk test --file=SecureDevOps.API/SecureDevOps.API.csproj'
-            }
-        }
+    steps {
+        echo 'Ejecutando análisis de vulnerabilidades con Snyk...'
+        bat '"C:\\Users\\Bri\\AppData\\Roaming\\npm\\snyk.cmd" test --file=SecureDevOps.API/SecureDevOps.API.csproj'
     }
+}
 
     post {
         always {
