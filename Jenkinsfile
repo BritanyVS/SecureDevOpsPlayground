@@ -17,14 +17,14 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Compilando el proyecto .NET...'
-                sh 'dotnet build SecureDevOps.API.csproj --configuration Release'
+                bat 'dotnet build SecureDevOps.API/SecureDevOps.API.csproj --configuration Release'
             }
         }
 
         stage('Snyk Security Scan') {
             steps {
                 echo 'Ejecutando análisis de vulnerabilidades con Snyk...'
-                sh 'snyk test --file=SecureDevOps.API.csproj'
+                bat 'snyk test --file=SecureDevOps.API/SecureDevOps.API.csproj'
             }
         }
     }
