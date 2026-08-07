@@ -8,9 +8,6 @@ Comprender cómo funciona Snyk Open Source y cómo analiza las dependencias de u
 
 SecureDevOpsPlayground
 
-## Fecha
-
-01-08-2026
 
 ## Herramientas
 
