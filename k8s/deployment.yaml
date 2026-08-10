@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: securedevops-api
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: securedevops-api
+
+  template:
+    metadata:
+      labels:
+        app: securedevops-api
+
+    spec:
+      containers:
+        - name: api
+          image: securedevops-api:1.0
+          ports:
+            - containerPort: 8080

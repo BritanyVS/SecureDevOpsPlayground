@@ -21,10 +21,25 @@ pipeline {
             }
         }
 
-        stage('Snyk Security Scan') {
+        stage('Snyk Security Scans') {
             steps {
-                echo 'Ejecutando análisis de vulnerabilidades con Snyk...'
+                echo 'Iniciando análisis de seguridad integrados con Snyk...'
+                
+                // 1. Snyk Code (Análisis estático de código fuente / SAST)
+                echo 'Ejecutando Snyk Code...'
+                bat 'snyk code test'
+
+                // 2. Snyk Open Source (Análisis de dependencias y paquetes NuGet)
+                echo 'Ejecutando Snyk Open Source...'
                 bat 'cd SecureDevOps.API && "C:\\Users\\Bri\\AppData\\Roaming\\npm\\snyk.cmd" test'
+
+                // 3. Snyk IaC (Análisis de configuraciones de infraestructura como código, ej. Kubernetes)
+                echo 'Ejecutando Snyk IaC...'
+                bat 'snyk iac test k8s/'
+
+                // 4. Snyk Container (Análisis de vulnerabilidades de la imagen y el Dockerfile)
+                echo 'Ejecutando Snyk Container...'
+                bat 'cd SecureDevOps.API && snyk container test --file=Dockerfile'
             }
         }
     }
@@ -34,7 +49,7 @@ pipeline {
             echo 'Pipeline finalizado.'
         }
         failure {
-            echo '¡Atención! El pipeline falló en la compilación o por vulnerabilidades detectadas.'
+            echo '¡Atención! El pipeline falló en la compilación o debido a vulnerabilidades detectadas en alguno de los escaneos de Snyk.'
         }
     }
 }
