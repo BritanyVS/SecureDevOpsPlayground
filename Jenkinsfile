@@ -27,19 +27,19 @@ pipeline {
                 
                 // 1. Snyk Code
                 echo 'Ejecutando Snyk Code...'
-                bat '"C:\\Users\\Bri\\AppData\\Roaming\\npm\\snyk.cmd" code test'
+                bat 'npx snyk code test'
 
                 // 2. Snyk Open Source
                 echo 'Ejecutando Snyk Open Source...'
-                bat 'cd SecureDevOps.API && "C:\\Users\\Bri\\AppData\\Roaming\\npm\\snyk.cmd" test'
+                bat 'cd SecureDevOps.API && npx snyk test'
 
                 // 3. Snyk IaC
                 echo 'Ejecutando Snyk IaC...'
-                bat '"C:\\Users\\Bri\\AppData\\Roaming\\npm\\snyk.cmd" iac test k8s/'
+                bat 'npx snyk iac test k8s/'
 
                 // 4. Snyk Container
                 echo 'Ejecutando Snyk Container...'
-                bat 'cd SecureDevOps.API && "C:\\Users\\Bri\\AppData\\Roaming\\npm\\snyk.cmd" container test --file=Dockerfile'
+                bat 'cd SecureDevOps.API && npx snyk container test --file=Dockerfile'
             }
         }
     }
