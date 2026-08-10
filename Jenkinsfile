@@ -25,21 +25,21 @@ pipeline {
             steps {
                 echo 'Iniciando análisis de seguridad integrados con Snyk...'
                 
-                // 1. Snyk Code (Análisis estático de código fuente / SAST)
+                // 1. Snyk Code
                 echo 'Ejecutando Snyk Code...'
-                bat 'snyk code test'
+                bat '"C:\\Users\\Bri\\AppData\\Roaming\\npm\\snyk.cmd" code test'
 
-                // 2. Snyk Open Source (Análisis de dependencias y paquetes NuGet)
+                // 2. Snyk Open Source
                 echo 'Ejecutando Snyk Open Source...'
                 bat 'cd SecureDevOps.API && "C:\\Users\\Bri\\AppData\\Roaming\\npm\\snyk.cmd" test'
 
-                // 3. Snyk IaC (Análisis de configuraciones de infraestructura como código, ej. Kubernetes)
+                // 3. Snyk IaC
                 echo 'Ejecutando Snyk IaC...'
-                bat 'snyk iac test k8s/'
+                bat '"C:\\Users\\Bri\\AppData\\Roaming\\npm\\snyk.cmd" iac test k8s/'
 
-                // 4. Snyk Container (Análisis de vulnerabilidades de la imagen y el Dockerfile)
+                // 4. Snyk Container
                 echo 'Ejecutando Snyk Container...'
-                bat 'cd SecureDevOps.API && snyk container test --file=Dockerfile'
+                bat 'cd SecureDevOps.API && "C:\\Users\\Bri\\AppData\\Roaming\\npm\\snyk.cmd" container test --file=Dockerfile'
             }
         }
     }
