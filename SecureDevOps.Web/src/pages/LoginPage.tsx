@@ -44,7 +44,8 @@ export function LoginPage() {
 
     try {
       const loginResponse = await authApi.login({ email, password });
-      const profile = await authApi.getProfile(loginResponse.token);
+      localStorage.setItem('token', loginResponse.token);
+      const profile = await authApi.getProfile();
 
       login(loginResponse.token, {
         userId: profile.userId,
