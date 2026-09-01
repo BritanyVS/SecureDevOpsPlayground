@@ -53,9 +53,14 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(allowedOrigins)
-            .AllowAnyHeader()
-            .AllowAnyMethod();
+        policy.SetIsOriginAllowed(origin =>
+        {
+            var isVercel = origin.EndsWith(".vercel.app", StringComparison.OrdinalIgnoreCase);
+            var isAllowed = allowedOrigins.Contains(origin);
+            return isVercel || isAllowed;
+        })
+        .AllowAnyHeader()
+        .AllowAnyMethod();
     });
 });
 
