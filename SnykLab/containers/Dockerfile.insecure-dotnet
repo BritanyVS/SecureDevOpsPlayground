@@ -1,0 +1,20 @@
+# ⚠️ LABORATORIO: Dockerfile-inseguro para .NET (Snyk Container)
+
+# VULNERABILIDAD 1: imágenes no versionadas inline con grabación
+FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build  # VULNERABILIDAD: .NET 5 EOL
+
+# VULNERABILIDAD 2: secrets hardcodeados en ENV
+ENV DOTNET_wrapperport=4899
+ENV ConnectionStrings__DefaultConnection="Server=db;Database=myapp;User=sa;Password=DB_P@sswOrd123!;"
+
+WORKDIR /app
+
+# VULNERABILIDAD 3: todos con privilegios root
+USER root
+
+# VULNERABILIDAD 4: usuario root en la imagen final
+FROM mcr.microsoft.com/dotnet/aspnet:5.0 AS final
+WORKDIR /app
+COPY --from=build /app/publish .
+# No se configura USER no-root
+ENTRYPOINT ["dotnet", "SecureDevOps.API.dll"]

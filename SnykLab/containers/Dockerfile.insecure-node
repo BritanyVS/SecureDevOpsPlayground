@@ -1,0 +1,27 @@
+# ⚠️ LABORATORIO: Dockerfile inseguro intencional (Snyk Container)
+
+# VULNERABILIDAD: versión de imagen OBSOLETA con CVEs conocidos
+FROM node:16.13.0 AS build
+
+# VULNERABILIDAD: secretos en ENV (quedan en el historial de capas)
+ENV DB_PASSWORD=Sup3rSecret!
+ENV API_KEY=AKIAIOSFODNN7EXAMPLE
+
+# VULNERABILIDAD: instalar dependencias sin verificar firmas
+RUN apt-get update && apt-get install -y curl jq
+
+WORKDIR /app
+
+# VULNERABILIDAD: RUN con privilegios de root
+USER root
+
+COPY . .
+
+# VULNERABILIDAD: sin HEALTHCHECK
+# VULNERABILIDAD: sin multi-stage (imagen final lleva build tools)
+
+RUN npm install
+
+EXPOSE 80
+
+CMD ["npm", "start"]
