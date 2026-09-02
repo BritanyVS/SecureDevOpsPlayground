@@ -8,6 +8,13 @@ using SecureDevOps.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Desactivar file watching en config JSON (resuelve inotify limit en Render free)
+builder.Configuration.Sources.Clear();
+builder.Configuration
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: false)
+    .AddEnvironmentVariables();
+
 var renderPort = Environment.GetEnvironmentVariable("PORT");
 if (!string.IsNullOrEmpty(renderPort))
 {
