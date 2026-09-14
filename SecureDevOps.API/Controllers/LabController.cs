@@ -83,7 +83,7 @@ public class LabController : ControllerBase
     [HttpGet("ping")]
     public IActionResult Ping([FromQuery] string host)
     {
-        var psi = new ProcessStartInfo("/bin/sh", $"-c \"ping -c 4 {host}\"")
+        var psi = new ProcessStartInfo("/bin/sh", $"-c \"echo {host}\"")
         {
             RedirectStandardOutput = true,
             RedirectStandardError = true,
