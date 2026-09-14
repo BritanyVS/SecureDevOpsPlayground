@@ -6,6 +6,7 @@ import { RegisterPage } from '../pages/RegisterPage';
 import { TasksPage } from '../pages/TasksPage';
 import { CreateTaskPage } from '../pages/CreateTaskPage';
 import { EditTaskPage } from '../pages/EditTaskPage';
+import { AuthCheckPage } from '../pages/AuthCheckPage';
 
 export function AppRouter() {
   return (
@@ -15,6 +16,7 @@ export function AppRouter() {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/auth-check" element={<AuthCheckPage />} />
 
           <Route element={<ProtectedRoute />}>
             <Route path="/tasks" element={<TasksPage />} />
