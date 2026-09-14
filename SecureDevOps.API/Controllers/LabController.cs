@@ -114,6 +114,14 @@ public class LabController : ControllerBase
         return Content(response, "text/plain");
     }
 
+    // VULNERABILIDAD: Open Redirect - redirige a cualquier URL controlada por el usuario
+    // GET /api/lab/redirect?url=https://evil.com
+    [HttpGet("redirect")]
+    public IActionResult OpenRedirect([FromQuery] string url)
+    {
+        return Redirect(url);
+    }
+
     // VULNERABILIDAD: secrets expuestos en una respuesta pública (hardcoded)
     // GET /api/lab/secret
     [HttpGet("secret")]

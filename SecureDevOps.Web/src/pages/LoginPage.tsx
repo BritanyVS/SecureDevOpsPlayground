@@ -123,6 +123,12 @@ export function LoginPage() {
             Register
           </Link>
         </div>
+
+        <div className={styles.footer}>
+          <Link to="/lab" className={styles.link}>
+            Lab endpoints
+          </Link>
+        </div>
       </div>
     </div>
   );

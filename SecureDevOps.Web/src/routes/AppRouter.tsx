@@ -7,6 +7,7 @@ import { TasksPage } from '../pages/TasksPage';
 import { CreateTaskPage } from '../pages/CreateTaskPage';
 import { EditTaskPage } from '../pages/EditTaskPage';
 import { AuthCheckPage } from '../pages/AuthCheckPage';
+import { LabPage } from '../pages/LabPage';
 import { HomeRedirect } from '../components/HomeRedirect';
 
 export function AppRouter() {
@@ -18,6 +19,7 @@ export function AppRouter() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/auth-check" element={<AuthCheckPage />} />
+          <Route path="/lab" element={<LabPage />} />
 
           <Route element={<ProtectedRoute />}>
             <Route path="/tasks" element={<TasksPage />} />
