@@ -487,3 +487,6 @@ $RECYCLE.BIN/
 
 # Publish output
 out/
+*.db-shm
+*.db-wal
+

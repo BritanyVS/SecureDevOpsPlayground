@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SecureDevOps.API.Data;
+using SecureDevOps.API.Models;
+using SecureDevOps.API.Models.Enums;
 using SecureDevOps.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -84,6 +86,64 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
+
+    // Seed usuarios de demo (Render free tier borra la DB en cada restart)
+    var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasherService>();
+    var demoUsers = new (string email, string password, string username, string role)[]
+    {
+        ("juan@gmail.com", "contra1234", "Juan", "Admin"),
+        ("prueba@gmail.com", "contra1234", "Prueba", "User"),
+        ("admin@gmail.com", "Admin123!", "Admin", "Admin")
+    };
+
+    foreach (var (email, password, username, role) in demoUsers)
+    {
+        if (!db.Users.Any(u => u.Email == email))
+        {
+            db.Users.Add(new User
+            {
+                Id = Guid.NewGuid(),
+                Email = email,
+                Username = username,
+                FirstName = username.Split(' ')[0],
+                PasswordHash = hasher.HashPassword(password),
+                Role = role,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+        }
+    }
+    db.SaveChanges();
+
+    // Seed tareas de demo para que el DAST tenga datos en /api/tasks
+    var juan = db.Users.FirstOrDefault(u => u.Email == "juan@gmail.com");
+    if (juan != null && !db.TaskItems.Any())
+    {
+        var demoTasks = new[]
+        {
+            "Configurar pipeline CI/CD",
+            "Revisar vulnerabilidad en dependencies",
+            "Documentar políticas de seguridad",
+            "Implementar autenticación multifactor"
+        };
+        foreach (var title in demoTasks)
+        {
+            db.TaskItems.Add(new TaskItem
+            {
+                Id = Guid.NewGuid(),
+                Title = title,
+                Status = TaskItemStatus.Pending,
+                Priority = TaskPriority.Medium,
+                CreatedByUserId = juan.Id,
+                AssignedToUserId = juan.Id,
+                DueDate = DateTime.UtcNow.AddDays(7),
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+        }
+        db.SaveChanges();
+    }
 }
 
 if (app.Environment.IsDevelopment())
