@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
+import { authApi } from '../api/authApi';
 
 export interface User {
   userId: string;
@@ -39,6 +40,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
+    // Best-effort: invalida la sesión en el backend con el token actual,
+    // luego limpia el estado local. Nunca bloquea el cierre de sesión.
+    authApi.logout().catch(() => {
+      /* el token local ya será eliminado */
+    });
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setToken(null);

@@ -14,33 +14,37 @@ public class TaskItemService : ITaskItemService
         _context = context;
     }
 
-    public async Task<IEnumerable<TaskItemResponseDto>> GetAllAsync()
+    // Solo devuelve las tareas del usuario autenticado (propietario).
+    public async Task<IEnumerable<TaskItemResponseDto>> GetAllAsync(Guid currentUserId)
     {
         var tasks = await _context.TaskItems
             .Include(t => t.AssignedToUser)
+            .Where(t => t.CreatedByUserId == currentUserId)
             .ToListAsync();
 
         return tasks.Select(MapToResponseDto);
     }
 
-    public async Task<TaskItemResponseDto?> GetByIdAsync(Guid id)
+    public async Task<TaskItemResponseDto?> GetByIdAsync(Guid id, Guid currentUserId)
     {
         var task = await _context.TaskItems
             .Include(t => t.AssignedToUser)
-            .FirstOrDefaultAsync(t => t.Id == id);
+            .FirstOrDefaultAsync(t => t.Id == id && t.CreatedByUserId == currentUserId);
 
         return task is null ? null : MapToResponseDto(task);
     }
 
-    public async Task<TaskItemResponseDto> CreateAsync(TaskItemCreateDto dto)
+    public async Task<TaskItemResponseDto> CreateAsync(TaskItemCreateDto dto, Guid currentUserId)
     {
+        // El propietario SIEMPRE es el usuario autenticado.
+        // Se ignora cualquier valor de CreatedByUserId enviado por el cliente.
         var task = new TaskItem
         {
             Id = Guid.NewGuid(),
             Title = dto.Title,
             Description = dto.Description,
             Priority = dto.Priority,
-            CreatedByUserId = dto.CreatedByUserId,
+            CreatedByUserId = currentUserId,
             AssignedToUserId = dto.AssignedToUserId,
             DueDate = dto.DueDate,
             Status = Models.Enums.TaskItemStatus.Pending,
@@ -58,9 +62,10 @@ public class TaskItemService : ITaskItemService
         return MapToResponseDto(created);
     }
 
-    public async Task<TaskItemResponseDto?> UpdateAsync(Guid id, TaskItemUpdateDto dto)
+    public async Task<TaskItemResponseDto?> UpdateAsync(Guid id, TaskItemUpdateDto dto, Guid currentUserId)
     {
-        var task = await _context.TaskItems.FindAsync(id);
+        var task = await _context.TaskItems
+            .FirstOrDefaultAsync(t => t.Id == id && t.CreatedByUserId == currentUserId);
         if (task is null) return null;
 
         task.Title = dto.Title;
@@ -80,9 +85,10 @@ public class TaskItemService : ITaskItemService
         return MapToResponseDto(updated);
     }
 
-    public async Task<bool> DeleteAsync(Guid id)
+    public async Task<bool> DeleteAsync(Guid id, Guid currentUserId)
     {
-        var task = await _context.TaskItems.FindAsync(id);
+        var task = await _context.TaskItems
+            .FirstOrDefaultAsync(t => t.Id == id && t.CreatedByUserId == currentUserId);
         if (task is null) return false;
 
         _context.TaskItems.Remove(task);

@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="SecureDevOps.API/SecureDevOps.API.csproj" />
+  <Project Path="tests/SecureDevOps.API.Tests/SecureDevOps.API.Tests.csproj" />
 </Solution>

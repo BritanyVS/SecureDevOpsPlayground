@@ -8,23 +8,34 @@ namespace SecureDevOps.API.Controllers;
 // ⚠️ LABORATORIO: Endpoints intencionalmente vulnerables para Snyk API & Web (DAST).
 // Estos endpoints existen para que el escáner pueda detectar las vulnerabilidades
 // a través de HTTP. NO usar en producción.
+//
+// ESTÁN DESACTIVADOS POR DEFECTO. Para habilitarlos en un entorno de laboratorio:
+//   appsettings.json → "SecurityLab": { "Enabled": true }
+//   o variable de entorno → SecurityLab__Enabled=true
+// Con el lab desactivado, cada endpoint responde 404 sin exponer detalle.
 
 [ApiController]
 [Route("api/lab")]
 public class LabController : ControllerBase
 {
     private readonly IConfiguration _config;
+    private readonly bool _labEnabled;
 
     public LabController(IConfiguration config)
     {
         _config = config;
+        _labEnabled = config.GetValue<bool>("SecurityLab:Enabled");
     }
+
+    private IActionResult LabDisabledResult() =>
+        NotFound("Lab endpoints are disabled. Set SecurityLab__Enabled=true to run the Snyk DAST demo.");
 
     // VULNERABILIDAD: Reflected XSS - input del usuario se devuelve sin escapar en HTML
     // GET /api/lab/xss?input=<script>alert(1)</script>
     [HttpGet("xss")]
     public ContentResult Xss([FromQuery] string input)
     {
+        if (!_labEnabled) return LabDisabledResult() as ContentResult ?? Content("", "text/plain");
         var html = $@"
 <html>
 <body>
@@ -41,6 +52,7 @@ public class LabController : ControllerBase
     [HttpGet("search")]
     public IActionResult Search([FromQuery] string q)
     {
+        if (!_labEnabled) return LabDisabledResult();
         var connString = _config.GetConnectionString("DefaultConnection")!;
         using var connection = new SqliteConnection(connString);
         connection.Open();
@@ -63,6 +75,7 @@ public class LabController : ControllerBase
     [HttpGet("file")]
     public IActionResult ReadFile([FromQuery] string name)
     {
+        if (!_labEnabled) return LabDisabledResult();
         var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
         if (!Directory.Exists(uploadsDir))
         {
@@ -83,6 +96,7 @@ public class LabController : ControllerBase
     [HttpGet("ping")]
     public IActionResult Ping([FromQuery] string host)
     {
+        if (!_labEnabled) return LabDisabledResult();
         var psi = new ProcessStartInfo("/bin/sh", $"-c \"echo {host}\"")
         {
             RedirectStandardOutput = true,
@@ -109,6 +123,7 @@ public class LabController : ControllerBase
     [HttpGet("fetch")]
     public async Task<IActionResult> FetchUrl([FromQuery] string url)
     {
+        if (!_labEnabled) return LabDisabledResult();
         using var client = new HttpClient();
         var response = await client.GetStringAsync(url);
         return Content(response, "text/plain");
@@ -119,6 +134,7 @@ public class LabController : ControllerBase
     [HttpGet("redirect")]
     public IActionResult OpenRedirect([FromQuery] string url)
     {
+        if (!_labEnabled) return LabDisabledResult();
         return Redirect(url);
     }
 
@@ -127,6 +143,7 @@ public class LabController : ControllerBase
     [HttpGet("secret")]
     public IActionResult GetSecret()
     {
+        if (!_labEnabled) return LabDisabledResult();
         return Ok(new
         {
             apiKey = "AKIAIOSFODNN7EXAMPLE-wJalrXUtnFEMI-K7MDENG",

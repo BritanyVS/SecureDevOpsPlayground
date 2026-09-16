@@ -1,0 +1,53 @@
+# ============================================================
+# Dockerfile del backend (SecureDevOps.API) — versión SEGURA
+#  - Multi-stage build (sdk → aspnet runtime)
+#  - Usuario NO-root (`app`, predefinido en las imágenes aspnet)
+#  - Sin secretos en el Dockerfile (todo por variables de entorno)
+#  - Health check /health
+#  - Solo expone el puerto 8080
+# ============================================================
+
+# ---- Stage 1: restauración + build + publish ----
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+COPY ["SecureDevOps.API/SecureDevOps.API.csproj", "SecureDevOps.API/"]
+RUN dotnet restore "SecureDevOps.API/SecureDevOps.API.csproj"
+
+COPY SecureDevOps.API/ ./SecureDevOps.API/
+WORKDIR "/src/SecureDevOps.API"
+RUN dotnet publish "SecureDevOps.API.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+# ---- Stage 2: imagen final mínima ----
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+
+# curl para el HEALTHCHECK (se quita la caché de apt al instante)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Directorio de datos para SQLite accesible por el usuario no-root
+RUN mkdir -p /app/data && chown -R app:app /app/data
+
+COPY --from=build /app/publish .
+
+# Si el directorio uploads del lab debe existir, se crea sin modificar la app.
+RUN mkdir -p /app/uploads && chown -R app:app /app/uploads
+
+# Cambiar al usuario no-root ("app" viene predefinido en aspnet:8.0)
+USER app
+
+# Configuración: la BD vive en /app/data; el JWT y el resto vienen de variables
+# de entorno (ver .env.example). Nunca en el Dockerfile.
+ENV ASPNETCORE_URLS=http://+:8080
+ENV ConnectionStrings__DefaultConnection="Data Source=/app/data/SecureDevOpsDb.db"
+ENV ASPNETCORE_ENVIRONMENT=Production
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
+  CMD curl -fsS http://localhost:8080/health || exit 1
+
+ENTRYPOINT ["dotnet", "SecureDevOps.API.dll"]

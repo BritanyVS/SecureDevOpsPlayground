@@ -1,0 +1,52 @@
+# ============================================================
+# docker-compose — SecureDevOpsPlayground (Task Manager Snyk Lab)
+#
+# Servicios:
+#   backend   → API .NET 8  (no-root, healthcheck, SQLite en volumen)
+#   frontend  → SPA React servida por nginx no-root (proxy /api → backend)
+#
+# La app usa SQLite; el "database/" se materializa como volumen (sqlite-data)
+# montado en /app/data dentro del backend.
+#
+# Uso:
+#   docker compose up --build
+#   Frontend: http://localhost:3000   |   Backend API: http://localhost:8080
+# ============================================================
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    image: securedevops-backend:lab
+    environment:
+      # ⚠️ Define JWT_SECRET en tu entorno. Nunca valores reales hardcodeados aquí.
+      JWT_SECRET: ${JWT_SECRET:-dev-only-change-me-32-chars-minimum!!!!!}
+      ASPNETCORE_ENVIRONMENT: Production
+      SECURITYLAB__ENABLED: ${SECURITYLAB__ENABLED:-false}
+    ports:
+      - "8080:8080"
+    volumes:
+      - sqlite-data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 20s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+      args:
+        VITE_API_URL: "/api"
+    image: securedevops-frontend:lab
+    ports:
+      - "3000:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  sqlite-data:

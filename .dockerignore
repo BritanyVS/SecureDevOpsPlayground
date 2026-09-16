@@ -1,0 +1,41 @@
+# Controla qué entra al contexto de build de Docker (seguridad + velocidad).
+# NO se incluyen secretos, datos, builds locales ni fixtures de laboratorio.
+
+.git
+**/.git
+
+# .NET build artifacts
+**/bin/
+**/obj/
+
+# Node
+**/node_modules/
+**/dist/
+
+# Base de datos local
+**/*.db
+**/*.db-journal
+**/*.db-wal
+**/*.db-shm
+
+# Secretos / entornos
+.env
+**/.env
+
+# Fixtures de laboratorio (no deben entrar a la imagen)
+security-lab/
+SnykLab/
+snyk-complete-demo/
+
+# Documentación y CI (no van a la imagen)
+*.md
+.github/
+docs/
+ai-agent/
+snyk-api/
+infrastructure/
+tests/
+Jenkinsfile
+Dockerfile
+docker-compose.yml
+.dcignore

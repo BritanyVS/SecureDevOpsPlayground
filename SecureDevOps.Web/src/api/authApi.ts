@@ -49,4 +49,8 @@ export const authApi = {
     const response = await axiosClient.get('/user/profile', config);
     return response.data;
   },
+
+  logout: async (): Promise<void> => {
+    await axiosClient.post('/auth/logout');
+  },
 };

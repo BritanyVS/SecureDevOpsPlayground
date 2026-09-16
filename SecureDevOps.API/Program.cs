@@ -31,6 +31,16 @@ builder.Services.AddScoped<IPasswordHasherService, PasswordHasherService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 
+// JWT secret: la variable de entorno JWT_SECRET tiene prioridad sobre appsettings.json.
+// En producción NUNCA debe quedar el valor por defecto de appsettings.
+var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET")
+    ?? builder.Configuration["Jwt:SecretKey"];
+if (string.IsNullOrWhiteSpace(jwtSecret))
+{
+    throw new InvalidOperationException("JWT_SECRET must be configured (env var or appsettings Jwt:SecretKey).");
+}
+builder.Configuration["Jwt:SecretKey"] = jwtSecret;
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -166,5 +176,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Health check para orquestadores / docker-compose (no requiere auth).
+app.MapGet("/health", () => Results.Ok(new { status = "ok", timestamp = DateTime.UtcNow }));
 
 app.Run();

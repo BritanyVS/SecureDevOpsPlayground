@@ -1,0 +1,23 @@
+# ⚠️ LABORATORIO CONTROLADO (no usar en producción).
+# Fixture para demo de Snyk Container: Node 16 EOL, root, secrets, sin healthcheck.
+
+# VULNERABILIDAD: imagen EOL (node:16 ya no recibe parches de seguridad)
+FROM node:16.13.0
+
+# VULNERABILIDAD: secretos en ENV (quedan en las capas de la imagen y son detectables)
+ENV DB_PASSWORD=Sup3rSecret!
+ENV API_KEY=AKIAIOSFODNN7EXAMPLE
+
+WORKDIR /app
+
+# VULNERABILIDAD: usuario root (privilegios excesivos)
+USER root
+
+COPY package.json ./
+
+# VULNERABILIDAD: sin multi-stage; la imagen final arrastra toolchain + vulnerabilidades npm
+RUN npm install
+
+# VULNERABILIDAD: sin HEALTHCHECK y expone su puerto
+EXPOSE 3000
+CMD ["npm", "start"]

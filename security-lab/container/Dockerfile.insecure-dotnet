@@ -1,0 +1,21 @@
+# ⚠️ LABORATORIO CONTROLADO (no usar en producción).
+# Fixture para demo de Snyk Container: .NET 5 EOL, root, secrets, sin healthcheck.
+
+# VULNERABILIDAD: imagen EOL con CVEs conocidos (.NET 5 fuera de soporte)
+FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build
+
+# VULNERABILIDAD: secretos hardcodeados en ENV
+ENV ConnectionStrings__DefaultConnection="Server=db;Database=myapp;User=sa;Password=DB_P@sswOrd123!;"
+
+WORKDIR /app
+
+RUN dotnet publish -c Release -o /app/publish
+
+# VULNERABILIDAD: sigue como root en la imagen final y sin USER no-root
+FROM mcr.microsoft.com/dotnet/aspnet:5.0
+WORKDIR /app
+COPY --from=build /app/publish .
+
+# VULNERABILIDAD: sin HEALTHCHECK
+EXPOSE 80
+ENTRYPOINT ["dotnet", "SecureDevOps.API.dll"]
