@@ -149,10 +149,13 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// C12 (VULN): Swagger UI expuesto también en Production — documento OpenAPI público
+// con todo el schema del API. FIX: exponer solo en Development / detrás de auth.
+app.UseSwagger();
+app.UseSwaggerUI();
+
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
     app.UseHttpsRedirection();
 }
 else
