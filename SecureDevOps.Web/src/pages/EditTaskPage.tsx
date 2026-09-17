@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { taskApi } from '../api/taskApi';
-import type { TaskItem } from '../api/taskApi';
+import type { TaskItem, TaskComment } from '../api/taskApi';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import styles from './TaskFormPage.module.css';
@@ -22,6 +22,10 @@ export function EditTaskPage() {
   const [status, setStatus] = useState<'Pending' | 'InProgress' | 'Completed'>('Pending');
   const [errors, setErrors] = useState<{ title?: string; server?: string }>({});
 
+  const [comments, setComments] = useState<TaskComment[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [isAddingComment, setIsAddingComment] = useState(false);
+
   useEffect(() => {
     if (!id) return;
     taskApi.getById(id)
@@ -34,6 +38,10 @@ export function EditTaskPage() {
       })
       .catch(() => navigate('/tasks'))
       .finally(() => setIsLoading(false));
+
+    taskApi.getComments(id)
+      .then(setComments)
+      .catch(() => setComments([]));
   }, [id, navigate]);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -59,6 +67,24 @@ export function EditTaskPage() {
       setErrors({ server: 'Failed to update task' });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleAddComment = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!task || !newComment.trim()) return;
+    setIsAddingComment(true);
+    try {
+      const authorUserId = localStorage.getItem('user')
+        ? JSON.parse(localStorage.getItem('user')!).userId
+        : undefined;
+      const created = await taskApi.addComment(task.id, newComment.trim(), authorUserId);
+      setComments([created, ...comments]);
+      setNewComment('');
+    } catch {
+      /* comentario no guardado */
+    } finally {
+      setIsAddingComment(false);
     }
   };
 
@@ -154,6 +180,39 @@ export function EditTaskPage() {
               Save Changes
             </Button>
           </form>
+        </div>
+
+        <div style={{ marginTop: '1.5rem' }}>
+          <h2 style={{ marginBottom: '0.5rem' }}>Comments ({comments.length})</h2>
+          <form onSubmit={handleAddComment} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+            <textarea
+              placeholder="Add a comment..."
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              rows={2}
+              style={{ flex: 1 }}
+            />
+            <Button type="submit" isLoading={isAddingComment} disabled={!newComment.trim()}>
+              Add
+            </Button>
+          </form>
+          {(comments ?? []).map(c => (
+            <div
+              key={c.id}
+              style={{
+                border: '1px solid var(--color-border, #e2e2e2)',
+                borderRadius: '8px',
+                padding: '0.6rem 0.9rem',
+                marginBottom: '0.5rem',
+                background: '#fff',
+              }}
+            >
+              <div style={{ fontSize: '0.75rem', color: '#666' }}>
+                <strong>{c.authorUsername || 'anonymous'}</strong> · {new Date(c.createdAt).toLocaleString()}
+              </div>
+              <div style={{ whiteSpace: 'pre-wrap' }}>{c.content}</div>
+            </div>
+          ))}
         </div>
       </main>
     </div>

@@ -1,11 +1,12 @@
 import { useNavigate } from 'react-router-dom';
-import type { TaskItem } from '../api/taskApi';
+import type { TaskItem, TaskStatus } from '../api/taskApi';
 import styles from './TaskCard.module.css';
 
 interface TaskCardProps {
   task: TaskItem;
   onDelete: (id: string) => void;
   onEdit: (id: string) => void;
+  onChangeStatus?: (id: string, status: TaskStatus) => void;
 }
 
 const priorityColors = {
@@ -20,7 +21,7 @@ const statusLabels = {
   Completed: 'Completed',
 };
 
-export function TaskCard({ task, onDelete, onEdit }: TaskCardProps) {
+export function TaskCard({ task, onDelete, onEdit, onChangeStatus }: TaskCardProps) {
   const navigate = useNavigate();
 
   return (
@@ -35,7 +36,20 @@ export function TaskCard({ task, onDelete, onEdit }: TaskCardProps) {
         >
           {task.priority}
         </span>
-        <span className={styles.status}>{statusLabels[task.status]}</span>
+        {onChangeStatus ? (
+          <select
+            className={styles.status}
+            value={task.status}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => onChangeStatus(task.id, e.target.value as TaskStatus)}
+          >
+            <option value="Pending">Pending</option>
+            <option value="InProgress">In Progress</option>
+            <option value="Completed">Completed</option>
+          </select>
+        ) : (
+          <span className={styles.status}>{statusLabels[task.status]}</span>
+        )}
         <div className={styles.actions}>
           <button
             className={styles.editButton}

@@ -57,6 +57,14 @@ public class TaskItemController : ControllerBase
         return Ok(updated);
     }
 
+    [HttpPatch("{id:guid}/status")]
+    public async Task<ActionResult<TaskItemResponseDto>> UpdateStatus(Guid id, TaskStatusUpdateDto dto)
+    {
+        var updated = await _service.UpdateStatusAsync(id, dto);
+        if (updated is null) return NotFound();
+        return Ok(updated);
+    }
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
@@ -64,4 +72,49 @@ public class TaskItemController : ControllerBase
         if (!deleted) return NotFound();
         return NoContent();
     }
+
+    // Comentarios de una tarea (stored XSS lab: el Content puede contener script).
+    [HttpGet("{id:guid}/comments")]
+    public async Task<ActionResult<IEnumerable<TaskCommentResponseDto>>> GetComments(Guid id)
+    {
+        var comments = await _service.ListCommentsAsync(id);
+        return Ok(comments);
+    }
+
+    [HttpPost("{id:guid}/comments")]
+    public async Task<ActionResult<TaskCommentResponseDto>> CreateComment(Guid id, TaskCommentCreateDto dto)
+    {
+        var created = await _service.CreateCommentAsync(id, dto);
+        if (created is null) return NotFound();
+        return CreatedAtAction(nameof(GetComments), new { id }, created);
+    }
+
+    // Exportación CSV de todas las tareas (data exposure lab).
+    [HttpGet("export")]
+    public async Task<IActionResult> Export([FromQuery] string? format = "csv")
+    {
+        var tasks = (await _service.ExportTasksAsync()).ToList();
+        if (!string.Equals(format, "csv", StringComparison.OrdinalIgnoreCase))
+            return BadRequest(new { error = "Solo se soporta format=csv" });
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("id,title,status,priority,assignedTo,dueDate,createdAt,updatedAt");
+        foreach (var t in tasks)
+        {
+            sb.AppendLine(string.Join(",",
+                t.Id,
+                CsvField(t.Title),
+                t.Status,
+                t.Priority,
+                CsvField(t.AssignedToUserName ?? ""),
+                t.DueDate?.ToString("s") ?? "",
+                t.CreatedAt.ToString("s"),
+                t.UpdatedAt.ToString("s")));
+        }
+
+        return Content(sb.ToString(), "text/csv", System.Text.Encoding.UTF8);
+    }
+
+    private static string CsvField(string value) =>
+        "\"" + value.Replace("\"", "\"\"") + "\"";
 }

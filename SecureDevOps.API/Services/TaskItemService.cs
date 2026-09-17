@@ -119,6 +119,88 @@ public class TaskItemService : ITaskItemService
         return true;
     }
 
+    // [1] VULNERABLE: cambio de estado sin comprobar propiedad de la tarea.
+    public async Task<TaskItemResponseDto?> UpdateStatusAsync(Guid id, TaskStatusUpdateDto dto)
+    {
+        var task = await _context.TaskItems
+            .Include(t => t.AssignedToUser)
+            .FirstOrDefaultAsync(t => t.Id == id);
+        if (task is null) return null;
+
+        task.Status = dto.Status;
+        await _context.SaveChangesAsync();
+
+        return MapToResponseDto(task);
+    }
+
+    // [1] VULNERABLE: se leen comentarios de tareas ajenas (sin propiedad).
+    // FIX: verificar que la tarea pertenezca al usuario; aquí solo se valida que exista.
+    public async Task<IEnumerable<TaskCommentResponseDto>> ListCommentsAsync(Guid taskId)
+    {
+        var exists = await _context.TaskItems.AnyAsync(t => t.Id == taskId);
+        if (!exists) return Enumerable.Empty<TaskCommentResponseDto>();
+
+        var comments = await _context.TaskComments
+            .Where(c => c.TaskItemId == taskId)
+            .OrderByDescending(c => c.CreatedAt)
+            .ToListAsync();
+
+        return comments.Select(c => MapToCommentDto(c));
+    }
+
+    // [3] VULNERABLE: Stored XSS. El Content se guarda tal cual y se exponde en JSON text/html.
+    //     El autor (AuthorUserId) viene del cliente, no del token (IDOR).
+    // FIX: sanitizar con HtmlSanitizer o devolver como texto plano + autor del JWT.
+    public async Task<TaskCommentResponseDto?> CreateCommentAsync(Guid taskId, TaskCommentCreateDto dto)
+    {
+        var task = await _context.TaskItems.FirstOrDefaultAsync(t => t.Id == taskId);
+        if (task is null) return null;
+
+        var author = dto.AuthorUserId is null
+            ? null
+            : await _context.Users.FirstOrDefaultAsync(u => u.Id == dto.AuthorUserId);
+
+        var comment = new Models.TaskComment
+        {
+            Id = Guid.NewGuid(),
+            TaskItemId = taskId,
+            AuthorUserId = author?.Id,
+            AuthorUsername = author?.Username,
+            Content = dto.Content,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.TaskComments.Add(comment);
+        await _context.SaveChangesAsync();
+
+        return MapToCommentDto(comment);
+    }
+
+    // [4] VULNERABLE: exporta datos de todos sin filtro y devuelve contenido en bruto.
+    // FIX: limitar por usuario y cifrar/redactar columnas sensibles.
+    public async Task<IEnumerable<TaskItemResponseDto>> ExportTasksAsync()
+    {
+        var tasks = await _context.TaskItems
+            .Include(t => t.AssignedToUser)
+            .OrderBy(t => t.CreatedAt)
+            .ToListAsync();
+
+        return tasks.Select(MapToResponseDto);
+    }
+
+    private static TaskCommentResponseDto MapToCommentDto(Models.TaskComment comment)
+    {
+        return new TaskCommentResponseDto
+        {
+            Id = comment.Id,
+            TaskItemId = comment.TaskItemId,
+            AuthorUserId = comment.AuthorUserId,
+            AuthorUsername = comment.AuthorUsername,
+            Content = comment.Content,
+            CreatedAt = comment.CreatedAt
+        };
+    }
+
     private static TaskItemResponseDto MapToResponseDto(TaskItem task)
     {
         return new TaskItemResponseDto

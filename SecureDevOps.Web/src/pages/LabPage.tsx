@@ -16,6 +16,10 @@ const endpoints: LabEndpoint[] = [
   { method: 'GET', url: '/api/lab/fetch?url=https://example.com', label: 'Fetch URL', vuln: 'SSRF' },
   { method: 'GET', url: '/api/lab/redirect?url=https://example.com', label: 'Redirect', vuln: 'Open Redirect' },
   { method: 'GET', url: '/api/lab/secret', label: 'App secrets', vuln: 'Exposed Secret' },
+  { method: 'GET', url: '/api/dashboard/stats?recentOrder=CreatedAt', label: 'Dashboard stats', vuln: 'SQLi (ORDER BY)' },
+  { method: 'GET', url: '/api/users', label: 'List users', vuln: 'Authz / Data exposure' },
+  { method: 'GET', url: '/api/audit/logs', label: 'Audit logs', vuln: 'Authz / Info leak' },
+  { method: 'GET', url: '/api/taskitem/export?format=csv', label: 'Export CSV', vuln: 'Data exposure' },
 ];
 
 export function LabPage() {

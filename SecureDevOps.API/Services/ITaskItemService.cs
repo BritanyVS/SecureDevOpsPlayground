@@ -11,5 +11,10 @@ public interface ITaskItemService
     Task<IEnumerable<TaskItemResponseDto>> SearchAsync(string query);
     Task<TaskItemResponseDto> CreateAsync(TaskItemCreateDto dto);
     Task<TaskItemResponseDto?> UpdateAsync(Guid id, TaskItemUpdateDto dto);
+    Task<TaskItemResponseDto?> UpdateStatusAsync(Guid id, TaskStatusUpdateDto dto);
     Task<bool> DeleteAsync(Guid id);
+
+    Task<IEnumerable<TaskCommentResponseDto>> ListCommentsAsync(Guid taskId);
+    Task<TaskCommentResponseDto?> CreateCommentAsync(Guid taskId, TaskCommentCreateDto dto);
+    Task<IEnumerable<TaskItemResponseDto>> ExportTasksAsync();
 }

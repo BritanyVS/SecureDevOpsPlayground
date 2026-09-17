@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
 
     public DbSet<User> Users => Set<User>();
     public DbSet<TaskItem> TaskItems => Set<TaskItem>();
+    public DbSet<TaskComment> TaskComments => Set<TaskComment>();
 
     public override int SaveChanges()
     {
@@ -60,6 +61,16 @@ public class AppDbContext : DbContext
                 .WithMany(u => u.AssignedTasks)
                 .HasForeignKey(t => t.AssignedToUserId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<TaskComment>(entity =>
+        {
+            entity.HasIndex(c => c.TaskItemId);
+
+            entity.HasOne(c => c.TaskItem)
+                .WithMany(t => t.Comments)
+                .HasForeignKey(c => c.TaskItemId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
