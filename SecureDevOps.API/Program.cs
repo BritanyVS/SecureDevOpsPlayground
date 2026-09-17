@@ -31,15 +31,8 @@ builder.Services.AddScoped<IPasswordHasherService, PasswordHasherService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 
-// JWT secret: la variable de entorno JWT_SECRET tiene prioridad sobre appsettings.json.
-// En producción NUNCA debe quedar el valor por defecto de appsettings.
-var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET")
-    ?? builder.Configuration["Jwt:SecretKey"];
-if (string.IsNullOrWhiteSpace(jwtSecret))
-{
-    throw new InvalidOperationException("JWT_SECRET must be configured (env var or appsettings Jwt:SecretKey).");
-}
-builder.Configuration["Jwt:SecretKey"] = jwtSecret;
+// ⚠️ LABORATORIO: el secreto JWT se lee directamente de appsettings.json (hardcoded).
+// En la app real, el token se sirve desde AppSecrets/entorno. FIX: variable de entorno.
 
 builder.Services.AddAuthentication(options =>
 {

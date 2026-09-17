@@ -1,92 +1,60 @@
-# SecureDevOpsPlayground — Snyk Security & Agentic Development Lab
+# SecureDevOpsPlayground — Laboratorio Snyk
 
-> Laboratorio profesional de seguridad y desarrollo agéntico sobre una app Task Manager
-> funcional: **backend seguro** (.NET 8) + **frontend** (React 19/Vite/TypeScript) +
-> **escenarios vulnerables controlados y aislados** en `security-lab/` para demostrar el
-> catálogo de Snyk (Open Source, Code, Secrets, Container, IaC, API & Web/DAST, API, MCP).
+> Un solo proyecto sencillo, **vulnerable a propósito** y con vulnerabilidades
+> **controladas y fáciles de corregir**, para demostrar los productos Snyk:
+> **Code, Open Source, Secrets, IaC y Container**, además de endpoints para
+> **Snyk API & Web (DAST)**.
+
+Task Manager funcional con **backend .NET 8** (`SecureDevOps.API`) + **frontend React/Vite**
+(`SecureDevOps.Web`) + **SQLite**.
 
 ## Quick start
 
 ```bash
-# Backend (dev, https://localhost:7196)
+# Desarrollo
 dotnet run --urls "https://localhost:7196" --project SecureDevOps.API/SecureDevOps.API.csproj
+cd SecureDevOps.Web && npm install && npm run dev   # http://localhost:3000 (proxy /api)
 
-# Frontend (dev, http://localhost:3000; proxy /api al backend)
-cd SecureDevOps.Web && npm install && npm run dev
-
-# Docker completo (http://localhost:8080, frontend http://localhost:3000)
+# Docker completo (frontend http://localhost:3000 · API http://localhost:8081)
 docker compose up --build
 ```
 
-Usuarios demo (seed): `juan@gmail.com` / `contra1234`, `prueba@gmail.com` / `contra1234`,
-`admin@gmail.com` / `Admin123!`.
+Usuarios demo (seed): `juan@gmail.com` / `contra1234` · `admin@gmail.com` / `Admin123!`
 
-### Variables de entorno (ver `.env.example`)
+## Variables de entorno (ver `.env.example`)
 
 | Variable | Uso |
 |---|---|
-| `JWT_SECRET` | Firma de tokens JWT (tomada con precedencia sobre appsettings) |
-| `SECURITYLAB__ENABLED` | Habilitar endpoints de laboratorio (`/api/lab/*`) para demos DAST |
-| `ConnectionStrings__DefaultConnection` | Cadena de SQLite/BD |
-| `VITE_API_URL` | URL base del frontend (`/api` en docker) |
-| `SNYK_TOKEN`, `SNYK_ORG` | Scripts de `snyk-api/` y CI |
-
-## Tests
-
-```bash
-# Backend (xUnit, 13 tests)
-dotnet test tests/SecureDevOps.API.Tests/SecureDevOps.API.Tests.csproj
-
-# Frontend
-cd SecureDevOps.Web && npm run build && npm run lint
-```
-
-## Estructura del laboratorio
-
-| Carpeta | Contenido |
-|---|---|
-| `security-lab/code/` | 9 escenarios Snyk Code (vuln + secure) |
-| `security-lab/dependencies/` | Doc de dependencias para Snyk Open Source |
-| `security-lab/secrets/` | Fixtures de secretos para Snyk Secrets (ficticios) |
-| `security-lab/container/` | Dockerfiles inseguros de referencia |
-| `security-lab/iac/` | Terraform inseguro (Snyk IaC) — comparar con la versión segura |
-| `infrastructure/terraform/` | IaC SEGURO de referencia (VPC/RDS/ECS) |
-| `docker/` | Dockerfiles endurecidos + nginx + compose |
-| `snyk-api/` | Scripts Node para la Snyk REST/V1 API |
-| `ai-agent/` | Workflow agentic PLAN→…→REPORT, prompts reutilizables, MCP |
-| `docs/` | `API.md`, `DAST-SCENARIOS.md`, `SECURITY-ARCHITECTURE.md`, `SNYK-DEMO-GUIDE.md` |
-| `tests/` | Proyecto xUnit de la API |
-
-## Estado de seguridad (resumen)
-
-- ✔ **IDOR corregido**: los recursos se resuelven contra el usuario del JWT
-  (`ClaimTypes.NameIdentifier`), nunca contra input del cliente.
-- ✔ **JWT** secreto desde `JWT_SECRET` (precedencia) → throw si falta.
-- ✔ **Lab endpoint** desactivado por defecto (`SecurityLab__Enabled=false`).
-- ✔ **/health**, logout, CORS y seed seguros.
-- ⚠ Baseline y hallazgos previos documentados en `SECURITY-LAB-BASELINE.md`.
+| `ConnectionStrings__DefaultConnection` | Cadena SQLite (por defecto local o `/app/data/SecureDevOpsDb.db` en Docker) |
+| `VITE_API_URL` | URL base del frontend (`/api` en Docker) |
 
 ## Escaneos con Snyk
 
 ```bash
-snyk test --all-projects          # Open Source
-snyk code test                    # Code
-snyk iac test infrastructure/terraform   # IaC (seguro)
-snyk iac test security-lab/iac    # IaC (fixtures)
-snyk container test securedevops-api:lab --file=docker/Dockerfile.backend
-snyk secrets scan security-lab/secrets   # Secrets
+snyk auth            # si no has iniciado sesión
+snyk code test                    # Snyk Code (SAST, backend)
+snyk test --all-projects          # Snyk Open Source (frontend)
+snyk secrets scan .               # Snyk Secrets (secrets.example.json)
+snyk iac test iac/main.tf         # Snyk IaC
+snyk container test snyk-lab-backend --file=Dockerfile   # Snyk Container (imagen local)
 ```
 
-Guía completa de demos: `docs/SNYK-DEMO-GUIDE.md`.
+Resultados esperados y resolución de cada hallazgo: **`docs/VULNERABILITIES.md`** (y el PDF del mismo nombre).
 
-## CI/CD
+## Estructura
 
-`.github/workflows/ci.yml`: build + tests (push de main y PRs) y escaneos Snyk
-(Open Source, Code con SARIF, IaC, Container), usando `secrets.SNYK_TOKEN`.
-Existe además un pipeline heredado `Jenkinsfile` con `SnykLab/`.
+```
+SecureDevOps.API/        Backend .NET 8 (vulnerable por diseño, endpoints /api/lab/* para DAST)
+SecureDevOps.Web/        Frontend React/Vite con dependencias antiguas (Snyk Open Source)
+docs/                    VULNERABILITIES.md + PDF  ← inventario exacto de lo implementado
+iac/                     Terraform inseguro (Snyk IaC)
+secrets.example.json     Fixture de secretos (Snyk Secrets) — ficticios
+Dockerfile               Backend (imagen sdk + root → Snyk Container)
+docker-compose.yml       Backend + frontend con volumen SQLite
+```
 
-## Notas
+## Notas de seguridad
 
-- Los fixtures inseguros (`security-lab/`, `SnykLab/`, `snyk-complete-demo/`) NO deben
-  desplegarse en producción; son material didáctico.
-- No se incluyen secretos reales; todos los valores de ejemplo son ficticios.
+- Todo es **material didáctico**: la app y la infra incluidas son intencionalmente inseguras.
+  No desplegar en producción tal cual. Arreglos de 1–3 líneas descritos en `docs/VULNERABILITIES.md`.
+- No hay secretos reales; todos los valores de ejemplo son ficticios.

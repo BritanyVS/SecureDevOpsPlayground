@@ -39,8 +39,7 @@ public class AuthController : ControllerBase
 
     // Logout: confirma el cierre de sesión. En un esquema JWT sin estado, la revocación
     // inmediata del token requiere un blocklist/denylist. Aquí se devuelve 204 y el cliente
-    // elimina el token localmente. (Ver docs/SECURITY-ARCHITECTURE.md para la variante con
-    // revocación server-side.)
+    // elimina el token localmente.
     [HttpPost("logout")]
     [Microsoft.AspNetCore.Authorization.Authorize]
     public IActionResult Logout()

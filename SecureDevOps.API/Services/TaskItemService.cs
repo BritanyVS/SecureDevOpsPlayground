@@ -5,6 +5,11 @@ using SecureDevOps.API.Models;
 
 namespace SecureDevOps.API.Services;
 
+// ⚠️ LABORATORIO INTENCIONALMENTE VULNERABLE.
+// Vulnerabilidades pensadas (fáciles de resolver, ver docs/VULNERABILITIES.md):
+//   [1] Broken Object Level Authorization (IDOR): no se comprueba que la tarea
+//       pertenezca al usuario autenticado. FIX: filtrar por userId del token.
+//   [2] SQL Injection: query se concatena en SQL crudo (FromSqlRaw). FIX: usar LINQ.
 public class TaskItemService : ITaskItemService
 {
     private readonly AppDbContext _context;
@@ -14,37 +19,52 @@ public class TaskItemService : ITaskItemService
         _context = context;
     }
 
-    // Solo devuelve las tareas del usuario autenticado (propietario).
-    public async Task<IEnumerable<TaskItemResponseDto>> GetAllAsync(Guid currentUserId)
+    // [1] VULNERABLE: devuelve TODAS las tareas de todos los usuarios.
+    // FIX: añadir .Where(t => t.CreatedByUserId == currentUserId).
+    public async Task<IEnumerable<TaskItemResponseDto>> GetAllAsync()
     {
         var tasks = await _context.TaskItems
             .Include(t => t.AssignedToUser)
-            .Where(t => t.CreatedByUserId == currentUserId)
             .ToListAsync();
 
         return tasks.Select(MapToResponseDto);
     }
 
-    public async Task<TaskItemResponseDto?> GetByIdAsync(Guid id, Guid currentUserId)
+    // [1] VULNERABLE: cualquier usuario autenticado puede leer la tarea de otro por su id.
+    // FIX: comprobar t.CreatedByUserId == currentUserId en el FirstOrDefault.
+    public async Task<TaskItemResponseDto?> GetByIdAsync(Guid id)
     {
         var task = await _context.TaskItems
             .Include(t => t.AssignedToUser)
-            .FirstOrDefaultAsync(t => t.Id == id && t.CreatedByUserId == currentUserId);
+            .FirstOrDefaultAsync(t => t.Id == id);
 
         return task is null ? null : MapToResponseDto(task);
     }
 
-    public async Task<TaskItemResponseDto> CreateAsync(TaskItemCreateDto dto, Guid currentUserId)
+    // [2] VULNERABLE: SQL Injection. query se concatena sin parametrizar.
+    // GET /api/taskitem/search?q=abc' UNION SELECT ...
+    // FIX: _context.TaskItems.Where(t => t.Title.Contains(query)).
+    public async Task<IEnumerable<TaskItemResponseDto>> SearchAsync(string query)
     {
-        // El propietario SIEMPRE es el usuario autenticado.
-        // Se ignora cualquier valor de CreatedByUserId enviado por el cliente.
+        var tasks = await _context.TaskItems
+            .FromSqlRaw($"SELECT * FROM TaskItems WHERE Title LIKE '%{query}%'")
+            .Include(t => t.AssignedToUser)
+            .ToListAsync();
+
+        return tasks.Select(MapToResponseDto);
+    }
+
+    // [1] VULNERABLE: el propietario VUENE DEL CLIENTE (dto.CreatedByUserId), no del token.
+    // Snyk Code lo marca como "Improper Authorization" / "Hardcoded ID trust".
+    public async Task<TaskItemResponseDto> CreateAsync(TaskItemCreateDto dto)
+    {
         var task = new TaskItem
         {
             Id = Guid.NewGuid(),
             Title = dto.Title,
             Description = dto.Description,
             Priority = dto.Priority,
-            CreatedByUserId = currentUserId,
+            CreatedByUserId = dto.CreatedByUserId,
             AssignedToUserId = dto.AssignedToUserId,
             DueDate = dto.DueDate,
             Status = Models.Enums.TaskItemStatus.Pending,
@@ -62,10 +82,11 @@ public class TaskItemService : ITaskItemService
         return MapToResponseDto(created);
     }
 
-    public async Task<TaskItemResponseDto?> UpdateAsync(Guid id, TaskItemUpdateDto dto, Guid currentUserId)
+    // [1] VULNERABLE: no se comprueba propiedad antes de editar.
+    public async Task<TaskItemResponseDto?> UpdateAsync(Guid id, TaskItemUpdateDto dto)
     {
         var task = await _context.TaskItems
-            .FirstOrDefaultAsync(t => t.Id == id && t.CreatedByUserId == currentUserId);
+            .FirstOrDefaultAsync(t => t.Id == id);
         if (task is null) return null;
 
         task.Title = dto.Title;
@@ -85,10 +106,11 @@ public class TaskItemService : ITaskItemService
         return MapToResponseDto(updated);
     }
 
-    public async Task<bool> DeleteAsync(Guid id, Guid currentUserId)
+    // [1] VULNERABLE: cualquier usuario puede borrar la tarea de otro.
+    public async Task<bool> DeleteAsync(Guid id)
     {
         var task = await _context.TaskItems
-            .FirstOrDefaultAsync(t => t.Id == id && t.CreatedByUserId == currentUserId);
+            .FirstOrDefaultAsync(t => t.Id == id);
         if (task is null) return false;
 
         _context.TaskItems.Remove(task);
