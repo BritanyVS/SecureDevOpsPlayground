@@ -392,8 +392,8 @@ FodyWeavers.xsd
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
-*.code-workspace
-!SecureDevOpsPlayground.code-workspace
+# Workspaces multi-carpeta de VS Code (se versionan para el equipo)
+# (la regla generica *.code-workspace se elimino: trabajamos con workspaces compartidos)
 
 # Local History for Visual Studio Code
 .history/
