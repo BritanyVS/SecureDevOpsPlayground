@@ -76,12 +76,18 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    // El server URL del OpenAPI debe coincidir con el host desde el que se sirve,
+    // o Snyk API & Web rechaza el schema: "Target didn't match server URL from API schema".
+    options.DocumentFilter<SecureDevOps.API.Swagger.ServerUrlDocumentFilter>();
+});
 
 var app = builder.Build();
 
