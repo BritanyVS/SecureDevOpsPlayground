@@ -1,0 +1,24 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "SecureDevOps.API"
+		},
+		{
+			"path": "SecureDevOps.Web"
+		},
+		{
+			"path": "iac"
+		}
+	],
+	"settings": {
+		"snyk.enableCodeSecurity": true,
+		"snyk.enableOpenSource": true,
+		"snyk.enableIaC": true,
+		"snyk.enableContainer": false,
+		"snyk.advanced.autoScanOnFileChange": false,
+		"snyk.advanced.autoScanOnOpen": true
+	}
+}
