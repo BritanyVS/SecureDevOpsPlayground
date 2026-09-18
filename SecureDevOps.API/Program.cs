@@ -96,22 +96,23 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
 
-    // Seed usuarios de demo (Render free tier borra la DB en cada restart)
+    // Seed usuarios de demo (Render free tier borra la DB en cada restart).
+    // IDs FIJOS para que Snyk API & Web use los mismos GUIDs en "API Parameter Custom Values".
     var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasherService>();
-    var demoUsers = new (string email, string password, string username, string role)[]
+    var demoUsers = new (Guid id, string email, string password, string username, string role)[]
     {
-        ("juan@gmail.com", "contra1234", "Juan", "Admin"),
-        ("prueba@gmail.com", "contra1234", "Prueba", "User"),
-        ("admin@gmail.com", "Admin123!", "Admin", "Admin")
+        (Guid.Parse("11111111-1111-1111-1111-111111111111"), "juan@gmail.com", "contra1234", "Juan", "Admin"),
+        (Guid.Parse("22222222-2222-2222-2222-222222222222"), "prueba@gmail.com", "contra1234", "Prueba", "User"),
+        (Guid.Parse("33333333-3333-3333-3333-333333333333"), "admin@gmail.com", "Admin123!", "Admin", "Admin")
     };
 
-    foreach (var (email, password, username, role) in demoUsers)
+    foreach (var (id, email, password, username, role) in demoUsers)
     {
         if (!db.Users.Any(u => u.Email == email))
         {
             db.Users.Add(new User
             {
-                Id = Guid.NewGuid(),
+                Id = id,
                 Email = email,
                 Username = username,
                 FirstName = username.Split(' ')[0],
@@ -125,22 +126,23 @@ using (var scope = app.Services.CreateScope())
     }
     db.SaveChanges();
 
-    // Seed tareas de demo para que el DAST tenga datos en /api/tasks
+    // Seed tareas de demo para que el DAST tenga datos en /api/tasks.
+    // IDs FIJOS → Snyk puede tirar de ellos siempre.
     var juan = db.Users.FirstOrDefault(u => u.Email == "juan@gmail.com");
     if (juan != null && !db.TaskItems.Any())
     {
-        var demoTasks = new[]
+        var demoTasks = new (Guid id, string title)[]
         {
-            "Configurar pipeline CI/CD",
-            "Revisar vulnerabilidad en dependencies",
-            "Documentar políticas de seguridad",
-            "Implementar autenticación multifactor"
+            (Guid.Parse("44444444-4444-4444-4444-444444444401"), "Configurar pipeline CI/CD"),
+            (Guid.Parse("44444444-4444-4444-4444-444444444402"), "Revisar vulnerabilidad en dependencies"),
+            (Guid.Parse("44444444-4444-4444-4444-444444444403"), "Documentar políticas de seguridad"),
+            (Guid.Parse("44444444-4444-4444-4444-444444444404"), "Implementar autenticación multifactor")
         };
-        foreach (var title in demoTasks)
+        foreach (var (id, title) in demoTasks)
         {
             db.TaskItems.Add(new TaskItem
             {
-                Id = Guid.NewGuid(),
+                Id = id,
                 Title = title,
                 Status = TaskItemStatus.Pending,
                 Priority = TaskPriority.Medium,
