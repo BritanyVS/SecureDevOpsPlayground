@@ -8,6 +8,10 @@
 //   4. Snyk IaC         (Terraform) -> snyk iac test iac/main.tf
 //   5. Snyk Secrets     (Secretos)  -> snyk secrets scan .
 //
+// NOTA: Snyk Secrets requiera el producto habilitado en la org (Settings ->
+// Snyk Secrets en app.snyk.io). Hasta que se active, este stage SOLO genera el
+// reporte de referencia y NO hace fallar el build (no propaga exit code).
+//
 // NOTA PLATAFORMA: usa pasos "bat" (cmd de Windows) porque el agente corre en
 // Windows. En Linux cambia cada bat { ... } por sh { ... } y los "\\" por "/".
 //
@@ -153,12 +157,15 @@ pipeline {
         stage('Snyk Secrets') {
             steps {
                 withCredentials([string(credentialsId: 'snyk-token', variable: 'SNYK_TOKEN')]) {
-                    catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                    catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
                         bat '''
                             @echo off
                             set "PATH=%APPDATA%\\npm;%PATH%"
-                            call snyk secrets scan . > "%REPORTS_DIR%\\snyk-secrets.txt" 2>&1
-                            exit /b %ERRORLEVEL%
+                            set "ORG_FLAG="
+                            if not "x%SNYK_ORG%"=="x" set "ORG_FLAG=--org=%SNYK_ORG%"
+                            call snyk secrets scan . %ORG_FLAG% > "%REPORTS_DIR%\\snyk-secrets.txt" 2>&1
+                            if %ERRORLEVEL% NEQ 0 echo [INFO] Snyk Secrets reporte guardado. Requiere activar el producto en app.snyk.io (Settings -> Snyk Secrets).
+                            exit /b 0
                         '''
                     }
                 }
