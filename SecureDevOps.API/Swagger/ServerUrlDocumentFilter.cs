@@ -19,7 +19,12 @@ public class ServerUrlDocumentFilter : IDocumentFilter
         if (httpContext is null)
             return;
 
-        var baseUrl = $"{httpContext.Request.Scheme}://{httpContext.Request.Host}";
+        var forwardedProto = httpContext.Request.Headers["X-Forwarded-Proto"].FirstOrDefault();
+        var forwardedHost = httpContext.Request.Headers["X-Forwarded-Host"].FirstOrDefault();
+
+        var scheme = !string.IsNullOrEmpty(forwardedProto) ? forwardedProto : httpContext.Request.Scheme;
+        var host = !string.IsNullOrEmpty(forwardedHost) ? forwardedHost : httpContext.Request.Host.Value;
+        var baseUrl = $"{scheme}://{host}";
 
         swaggerDoc.Servers.Clear();
         swaggerDoc.Servers.Add(new OpenApiServer { Url = baseUrl });
