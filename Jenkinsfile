@@ -44,6 +44,9 @@ pipeline {
         string(name: 'FRONTEND_IMAGE',
                defaultValue: 'snyk-lab-frontend',
                description: 'Imagen Docker del frontend a escanear con Snyk Container.')
+        string(name: 'LOCAL_REPORTS_DIR',
+               defaultValue: 'C:\\Users\\BritanyVillalobosSal\\OneDrive - 01ZeroGroup\\Escritorio\\SecureDevOpsPlayground\\reports',
+               description: 'Carpeta local donde se copiaran los reportes al final del build (carpeta del lab). Dejar vacio para no copiar.')
     }
 
     environment {
@@ -176,6 +179,23 @@ pipeline {
             steps {
                 archiveArtifacts artifacts: 'reports/*', allowEmptyArchive: true
                 echo '=> Reportes Snyk guardados en artefactos: reports/*.json'
+            }
+        }
+
+        stage('Export reportes al lab') {
+            steps {
+                script {
+                    if (env.LOCAL_REPORTS_DIR) {
+                        bat '''
+                            @echo off
+                            if not exist "%LOCAL_REPORTS_DIR%" mkdir "%LOCAL_REPORTS_DIR%"
+                            copy /Y "%REPORTS_DIR%\\*" "%LOCAL_REPORTS_DIR%\\" >nul
+                            echo => Reportes copiados a %LOCAL_REPORTS_DIR%
+                        '''
+                    } else {
+                        echo '=> LOCAL_REPORTS_DIR vacio, no se copian reportes locales.'
+                    }
+                }
             }
         }
     }
