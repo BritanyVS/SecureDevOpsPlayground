@@ -44,7 +44,7 @@ pipeline {
 
     environment {
         REPORTS_DIR = "${WORKSPACE}\\reports"
-        SNYK_CLI_VERSION = '1.1293.2'
+        SNYK_CLI_VERSION = 'latest'
         SNYK_PATH_SETUP = '"%APPDATA%\\npm;%PATH%"'
     }
 
@@ -57,7 +57,7 @@ pipeline {
                         set "PATH=%APPDATA%\\npm;%PATH%"
                         echo => Verificando Node/npm...
                         where npm || (echo npm no encontrado. Instala Node.js LTS y reinicia Jenkins. & exit /b 1)
-                        where snyk >nul 2>&1 || call npm install -g snyk@%SNYK_CLI_VERSION% >nul 2>&1
+                        where snyk >nul 2>&1 || call npm install -g snyk@%SNYK_CLI_VERSION%
                         snyk --version || exit /b 1
                         if not exist "%REPORTS_DIR%" mkdir "%REPORTS_DIR%"
                     '''
