@@ -8,6 +8,9 @@
 //   4. Snyk IaC         (Terraform) -> snyk iac test iac/main.tf
 //   5. Snyk Secrets     (Secretos)  -> snyk secrets scan .
 //
+// NOTA PLATAFORMA: usa pasos "bat" (cmd de Windows) porque el agente corre en
+// Windows. En Linux cambia cada bat { ... } por sh { ... } y los "\\" por "/".
+//
 // CREDENCIALES PREVIAS EN JENKINS (una sola vez, NO se escriben en Git):
 //   Gestionar credenciales -> Credenciales globales -> Add credentials
 //     Kind  : Secret text
@@ -40,20 +43,23 @@ pipeline {
     }
 
     environment {
-        REPORTS_DIR = "${WORKSPACE}/reports"
+        REPORTS_DIR = "${WORKSPACE}\\reports"
         SNYK_CLI_VERSION = '1.1293.2'
+        SNYK_PATH_SETUP = '"%APPDATA%\\npm;%PATH%"'
     }
 
     stages {
         stage('Preparacion: CLI + reportes') {
             steps {
                 catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
-                    sh '''
-                        echo "=> Instalando Snyk CLI ${SNYK_CLI_VERSION}..."
-                        npm install -g snyk@${SNYK_CLI_VERSION} > /dev/null 2>&1 || true
-                        snyk --version || true
-                        mkdir -p ${REPORTS_DIR}
-                        echo "export REPORTS_DIR=${REPORTS_DIR}" > /tmp/snyk_env
+                    bat '''
+                        @echo off
+                        set "PATH=%APPDATA%\\npm;%PATH%"
+                        echo => Verificando Node/npm...
+                        where npm || (echo npm no encontrado. Instala Node.js LTS y reinicia Jenkins. & exit /b 1)
+                        where snyk >nul 2>&1 || call npm install -g snyk@%SNYK_CLI_VERSION% >nul 2>&1
+                        snyk --version || exit /b 1
+                        if not exist "%REPORTS_DIR%" mkdir "%REPORTS_DIR%"
                     '''
                 }
             }
@@ -63,12 +69,13 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'snyk-token', variable: 'SNYK_TOKEN')]) {
                     catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
-                        sh '''
-                            source /tmp/snyk_env
-                            snyk auth "$SNYK_TOKEN" > /dev/null 2>&1 || true
-                            ORG_FLAG=""
-                            if [ -n "$SNYK_ORG" ]; then ORG_FLAG="--org=$SNYK_ORG"; fi
-                            echo "ORG_FLAG=$ORG_FLAG" >> /tmp/snyk_env
+                        bat '''
+                            @echo off
+                            set "PATH=%APPDATA%\\npm;%PATH%"
+                            set "ORG_FLAG="
+                            if not "x%SNYK_ORG%"=="x" set "ORG_FLAG=--org=%SNYK_ORG%"
+                            call snyk auth "%SNYK_TOKEN%" >nul 2>&1
+                            exit /b 0
                         '''
                     }
                 }
@@ -79,11 +86,13 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'snyk-token', variable: 'SNYK_TOKEN')]) {
                     catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
-                        sh '''
-                            source /tmp/snyk_env
-                            set +e
-                            snyk test --all-projects --json > ${REPORTS_DIR}/snyk-oss.json 2>&1
-                            exit $?
+                        bat '''
+                            @echo off
+                            set "PATH=%APPDATA%\\npm;%PATH%"
+                            set "ORG_FLAG="
+                            if not "x%SNYK_ORG%"=="x" set "ORG_FLAG=--org=%SNYK_ORG%"
+                            call snyk test --all-projects %ORG_FLAG% --json > "%REPORTS_DIR%\\snyk-oss.json" 2>&1
+                            exit /b %ERRORLEVEL%
                         '''
                     }
                 }
@@ -94,11 +103,13 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'snyk-token', variable: 'SNYK_TOKEN')]) {
                     catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
-                        sh '''
-                            source /tmp/snyk_env
-                            set +e
-                            snyk code test --json > ${REPORTS_DIR}/snyk-code.json 2>&1
-                            exit $?
+                        bat '''
+                            @echo off
+                            set "PATH=%APPDATA%\\npm;%PATH%"
+                            set "ORG_FLAG="
+                            if not "x%SNYK_ORG%"=="x" set "ORG_FLAG=--org=%SNYK_ORG%"
+                            call snyk code test %ORG_FLAG% --json > "%REPORTS_DIR%\\snyk-code.json" 2>&1
+                            exit /b %ERRORLEVEL%
                         '''
                     }
                 }
@@ -109,11 +120,13 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'snyk-token', variable: 'SNYK_TOKEN')]) {
                     catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
-                        sh '''
-                            source /tmp/snyk_env
-                            set +e
-                            snyk container test "${BACKEND_IMAGE}" --file=Dockerfile --json > ${REPORTS_DIR}/snyk-container.json 2>&1
-                            exit $?
+                        bat '''
+                            @echo off
+                            set "PATH=%APPDATA%\\npm;%PATH%"
+                            set "ORG_FLAG="
+                            if not "x%SNYK_ORG%"=="x" set "ORG_FLAG=--org=%SNYK_ORG%"
+                            call snyk container test "%BACKEND_IMAGE%" --file=Dockerfile %ORG_FLAG% --json > "%REPORTS_DIR%\\snyk-container.json" 2>&1
+                            exit /b %ERRORLEVEL%
                         '''
                     }
                 }
@@ -124,11 +137,13 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'snyk-token', variable: 'SNYK_TOKEN')]) {
                     catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
-                        sh '''
-                            source /tmp/snyk_env
-                            set +e
-                            snyk iac test iac/main.tf --json > ${REPORTS_DIR}/snyk-iac.json 2>&1
-                            exit $?
+                        bat '''
+                            @echo off
+                            set "PATH=%APPDATA%\\npm;%PATH%"
+                            set "ORG_FLAG="
+                            if not "x%SNYK_ORG%"=="x" set "ORG_FLAG=--org=%SNYK_ORG%"
+                            call snyk iac test iac\\main.tf %ORG_FLAG% --json > "%REPORTS_DIR%\\snyk-iac.json" 2>&1
+                            exit /b %ERRORLEVEL%
                         '''
                     }
                 }
@@ -139,11 +154,11 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'snyk-token', variable: 'SNYK_TOKEN')]) {
                     catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
-                        sh '''
-                            source /tmp/snyk_env
-                            set +e
-                            snyk secrets scan . > ${REPORTS_DIR}/snyk-secrets.txt 2>&1
-                            exit $?
+                        bat '''
+                            @echo off
+                            set "PATH=%APPDATA%\\npm;%PATH%"
+                            call snyk secrets scan . > "%REPORTS_DIR%\\snyk-secrets.txt" 2>&1
+                            exit /b %ERRORLEVEL%
                         '''
                     }
                 }
