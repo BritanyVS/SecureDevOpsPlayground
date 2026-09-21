@@ -42,7 +42,7 @@ public class LabController : ControllerBase
     [HttpGet("xss-safe")]
     public ContentResult XssSafe([FromQuery] string input)
     {
-        var safe = AppSanitizer.SanitizeHtml(input);
+        var safe = SecureDevOps.API.Security.AppSanitizer.SanitizeHtml(input);
         var html = $@"
 <html>
 <body>

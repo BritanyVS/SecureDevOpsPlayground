@@ -5,7 +5,7 @@ namespace SecureDevOps.API.Security;
 // Sanitizer interno del laboratorio (demo Snyk Code Rule Extensions).
 // Snyk Code NO lo reconoce por defecto -> genera falso positivo hasta
 // registrarlo como custom sanitizer Flow Through:
-//   FQN: SecureDevOps.API.Security.AppSanitizer.SanitizeHtml
+//   FQN: global::SecureDevOps.API.Security.AppSanitizer.SanitizeHtml
 //   Rules: Reflected XSS + Stored XSS (C#)
 // Ver docs/VULNERABILITIES.md
 public static class AppSanitizer
