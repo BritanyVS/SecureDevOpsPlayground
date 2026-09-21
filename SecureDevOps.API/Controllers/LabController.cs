@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using SecureDevOps.API.Security;
 
 namespace SecureDevOps.API.Controllers;
 
@@ -29,6 +30,25 @@ public class LabController : ControllerBase
 <h1>Reflected XSS Lab</h1>
 <p>Input recibido:</p>
 <div>{input}</div>
+</body>
+</html>";
+        return Content(html, "text/html");
+    }
+
+    // DEMO Rule Extensions: mismo endpoint pero pasando por el sanitizer interno.
+    // Sin registrar el sanitizer en Snyk -> falso positivo (Snyk lo sigue marcando).
+    // Con sanitizer Flow Through registrado -> el hallazgo desaparece.
+    // GET /api/lab/xss-safe?input=<script>alert(1)</script>
+    [HttpGet("xss-safe")]
+    public ContentResult XssSafe([FromQuery] string input)
+    {
+        var safe = AppSanitizer.SanitizeHtml(input);
+        var html = $@"
+<html>
+<body>
+<h1>Reflected XSS Lab (sanitizado)</h1>
+<p>Input recibido:</p>
+<div>{safe}</div>
 </body>
 </html>";
         return Content(html, "text/html");
