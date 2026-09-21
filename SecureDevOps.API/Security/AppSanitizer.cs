@@ -1,5 +1,3 @@
-using System.Text.Encodings.Web;
-
 namespace SecureDevOps.API.Security;
 
 // Sanitizer interno del laboratorio (demo Snyk Code Rule Extensions).
@@ -12,9 +10,18 @@ public static class AppSanitizer
 {
     // Flow Through: el valor de retorno siempre sale sanitizado,
     // aunque el input venga contaminado.
+    // NOTA DEMO: implementación propia a propósito (replace manual) para que
+    // Snyk Code NO la reconozca como sanitizer conocido. Así genera el falso
+    // positivo que luego suprime la Rule Extension. No usar HtmlEncoder aquí
+    // porque Snyk ya lo conoce y el test daría "No findings affected".
     public static string SanitizeHtml(string? input)
     {
         if (string.IsNullOrEmpty(input)) return string.Empty;
-        return HtmlEncoder.Default.Encode(input);
+        return input
+            .Replace("<", "[lt]")
+            .Replace(">", "[gt]")
+            .Replace("\"", "[quot]")
+            .Replace("'", "[apos]")
+            .Replace("&", "[amp]");
     }
 }
